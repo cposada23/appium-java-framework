@@ -1,9 +1,9 @@
 package org.example.android;
 
 import io.appium.java_client.AppiumBy;
+import io.appium.java_client.android.Activity;
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
-import org.example.android.AndroidBaseTest;
 import org.example.screenobjects.android.GSCartScreen;
 import org.example.screenobjects.android.GSProductCatalogScreen;
 import org.example.screenobjects.android.GeneralStoreFormScreen;
@@ -11,23 +11,73 @@ import org.example.utils.dto.FormFields;
 import org.example.utils.enums.Gender;
 import org.openqa.selenium.By;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 public class GeneralStoreAPKExampleTests extends AndroidBaseTest {
-    @Test
-    public void fillFormExample() throws InterruptedException {
+
+    @BeforeMethod
+    public void setup() throws InterruptedException {
+        String initialActivity = ".MainActivity";
+        String packageName = "com.androidsample.generalstore";
+        Activity activity = new Activity(packageName, initialActivity);
+        driver.startActivity(activity);
+        Thread.sleep(1000);
+    }
+
+    @DataProvider
+    public Object[][] getData() {
+        return new Object[][] {
+                {"Camilo", "Colombia", Gender.MALE},
+                {"Natalia", "Argentina", Gender.FEMALE}
+        };
+    }
+
+    @Test(dataProvider = "getData")
+    public void fillFormExample(String name, String country, Gender gender) throws InterruptedException {
         GeneralStoreFormScreen formScreen = new GeneralStoreFormScreen(driver);
         // Type the name
-        formScreen.setNameField("Camilo");
+        formScreen.setNameField(name);
         // Select gender in the radio button
-        formScreen.setGender(Gender.MALE);
-        // Select Colombia
-        String country = "Colombia";
+        formScreen.setGender(gender);
         formScreen.selectCountry(country);
+        // Click letsShop button
+        formScreen.clickLetsShop();
+        // Validate you are in the Products screen
+        commonAssertions.assertIAmInScreen("Products");
+    }
+
+    @DataProvider
+    public Object[][] getDataFromJson() throws IOException {
+        List<HashMap<String, String>> data = jsonUtils.getJsonData(
+                System.getProperty("user.dir").concat(
+                      "/src/test/java/org/example/testdata/eCommerce.json"
+                )
+        );
+        Object [][] object = new Object[data.size()][1];
+        for (int i = 0; i < data.size(); i++) {
+            HashMap<String, String> row = data.get(i);
+            object[i][0] = row;
+        }
+        return object;
+    }
+
+    @Test(dataProvider = "getDataFromJson")
+    public void fillFormFromJsonExample(HashMap<String, String> input) throws Exception {
+        GeneralStoreFormScreen formScreen = new GeneralStoreFormScreen(driver);
+        // Type the name
+        formScreen.setNameField(input.get("name"));
+        // Select gender in the radio button
+        formScreen.setGender(Gender.of(input.get("gender")));
+        formScreen.selectCountry(input.get("country"));
         // Click letsShop button
         formScreen.clickLetsShop();
         // Validate you are in the Products screen
@@ -113,7 +163,6 @@ public class GeneralStoreAPKExampleTests extends AndroidBaseTest {
     }
 
 
-    @Test
     public void webViewExample() throws ParseException, InterruptedException {
         GeneralStoreFormScreen formScreen = new GeneralStoreFormScreen(driver);
         FormFields formFields = new FormFields(
@@ -155,6 +204,7 @@ public class GeneralStoreAPKExampleTests extends AndroidBaseTest {
             System.out.println("################### Handle");
             System.out.println(handle);
         }
+
 
         driver.context("WEBVIEW_com.androidsample.generalstore");
 

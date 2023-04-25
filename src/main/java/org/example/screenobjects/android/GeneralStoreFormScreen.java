@@ -26,7 +26,9 @@ public class GeneralStoreFormScreen extends AndroidActions {
     @AndroidFindBy(id = "com.androidsample.generalstore:id/btnLetsShop")
     private WebElement btnLetsShop;
 
+    private AndroidDriver driver;
     public GeneralStoreFormScreen(AndroidDriver driver) {
+        super(driver);
         this.driver = driver;
         PageFactory.initElements(new AppiumFieldDecorator(driver), this);
     }

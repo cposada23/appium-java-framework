@@ -4,6 +4,7 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.options.UiAutomator2Options;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
+import org.example.utils.JsonUtils;
 import org.example.utils.actions.android.AndroidActions;
 import org.example.utils.assertions.CommonAssertions;
 import org.testng.annotations.AfterClass;
@@ -16,8 +17,7 @@ import java.time.Duration;
 
 public class AndroidBaseTest {
     private String deviceName = "Nexus 6P API 31";
-    // private String appPath = "/Users/camilo.posadaa/Documents/personal/framworks/java/Appium-java/src/test/java/org/resources/ApiDemos-debug.apk";
-    private String appPath = "/Users/camilo.posadaa/Documents/personal/framworks/java/Appium-java-framework/src/test/java/org/resources/General-Store.apk";
+    private String appPath = System.getProperty("user.dir") + "/src/test/java/org/resources/General-Store.apk";
     private String nodeModulesAppiumPath = "/Users/camilo.posadaa/.nvm/versions/node/v18.13.0/lib/node_modules/appium/build/lib/main.js";
     private String appiumIPAddress = "127.0.0.1";
     int appiumPort = 4723;
@@ -25,6 +25,7 @@ public class AndroidBaseTest {
 
     protected AndroidDriver driver;
     protected CommonAssertions commonAssertions;
+    protected JsonUtils jsonUtils;
     @BeforeClass
     public void configureAppium () throws MalformedURLException {
         // Start Appium Server programmatically
@@ -45,6 +46,7 @@ public class AndroidBaseTest {
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
         commonAssertions = new CommonAssertions(driver);
+        jsonUtils = new JsonUtils();
     }
     @AfterClass
     public void tearDown () {

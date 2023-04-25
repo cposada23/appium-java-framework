@@ -13,7 +13,10 @@ public class GSProductCatalogScreen extends AndroidActions {
     @AndroidFindBy(id = "com.androidsample.generalstore:id/appbar_btn_cart")
     private WebElement btnGoToCart;
     private String addItemButtonXpath = "//android.widget.TextView[@text='%s']/..//*[@resource-id='com.androidsample.generalstore:id/productAddCart']";
+    private AndroidDriver driver;
+
     public GSProductCatalogScreen(AndroidDriver driver) {
+        super(driver);
         this.driver = driver;
         PageFactory.initElements(new AppiumFieldDecorator(driver), this);
     }

@@ -30,7 +30,11 @@ public class GSCartScreen extends AndroidActions {
     WebElement totalPrice;
 
     String xpathForCartItems = "//android.widget.TextView[@text='%s']";
+
+    private AndroidDriver driver;
+
     public GSCartScreen(AndroidDriver driver) {
+        super(driver);
         this.driver = driver;
         PageFactory.initElements(new AppiumFieldDecorator(driver), this);
     }
@@ -40,10 +44,11 @@ public class GSCartScreen extends AndroidActions {
     }
 
     public void waitUntilProductIsVisible(String productName) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-        wait.until(ExpectedConditions.visibilityOf(
-                driver.findElement(AppiumBy.xpath(String.format(xpathForCartItems, productName)))
-        ));
+        waitUtils.waitUntilElementIsVisible(
+           driver.findElement(
+               AppiumBy.xpath(String.format(xpathForCartItems, productName))
+           )
+        );
     }
 
     public List<Number> getAllProductPrices() {

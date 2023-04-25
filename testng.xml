@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Testing Google Apps">
-    <test name="Regression">
+<suite name="Testing mobile Apps">
+    <test name="Android Tests">
         <classes>
             <class name="org.example.android.GeneralStoreAPKExampleTests"/>
+        </classes>
+    </test> <!-- Test -->
+    <test name="iOS Tests">
+        <classes>
+            <class name="org.example.ios.UIKitCatalogAppTest"/>
         </classes>
     </test> <!-- Test -->
 </suite> <!-- Suite -->

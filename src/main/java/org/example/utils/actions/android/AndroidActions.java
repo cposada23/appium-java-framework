@@ -3,13 +3,21 @@ package org.example.utils.actions.android;
 import com.google.common.collect.ImmutableMap;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.android.AndroidDriver;
+import org.example.utils.actions.WaitUtils;
 import org.example.utils.enums.SwipeDirections;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebElement;
 
 public class AndroidActions {
-    protected AndroidDriver driver;
+    private AndroidDriver driver;
+    protected WaitUtils waitUtils;
+
+    public AndroidActions(AndroidDriver driver) {
+        this.driver = driver;
+        this.waitUtils = new WaitUtils(driver);
+    }
+
     public void longPress(WebElement element, int duration) {
         ((JavascriptExecutor)driver).executeScript(
                 "mobile: longClickGesture",

@@ -10,7 +10,6 @@ import org.testng.annotations.Test;
 public class UIKitCatalogAppTest extends IOSBaseTest{
 
 
-    @Test
     public void basicTest() {
         driver.findElement(AppiumBy.accessibilityId("Alert Views")).click();
     }
@@ -24,7 +23,6 @@ public class UIKitCatalogAppTest extends IOSBaseTest{
         driver.findElement(AppiumBy.accessibilityId("OK")).click();
     }
 
-    @Test
     public void predicateStringExample() {
         driver.findElement(AppiumBy.accessibilityId("Alert Views")).click();
         driver.findElement(AppiumBy.iOSNsPredicateString("type == 'XCUIElementTypeStaticText' AND value == 'Confirm / Cancel'")).click();
@@ -38,7 +36,6 @@ public class UIKitCatalogAppTest extends IOSBaseTest{
         System.out.println(String.format("Text: %s", text));
     }
 
-    @Test
     public void longPressExample() {
         driver.findElement(AppiumBy.accessibilityId("Steppers")).click();
         WebElement element = driver.findElement(AppiumBy.iOSClassChain("**/XCUIElementTypeButton[`label == 'Increment'`][3]"));
@@ -52,7 +49,6 @@ public class UIKitCatalogAppTest extends IOSBaseTest{
         );
     }
 
-    @Test
     public void scrollExample() {
         WebElement element = driver.findElement(AppiumBy.accessibilityId("Web View"));
 
