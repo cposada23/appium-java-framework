@@ -195,3 +195,395 @@ And then the test will receive a HashMap instead of the parameters that we previ
         commonAssertions.assertIAmInScreen("Products");
     }
 ```
+
+
+### Appium Utility Class
+I created an Appium utils class to start the Appium server and load a properties file:
+
+```java
+import io.appium.java_client.service.local.AppiumDriverLocalService;
+import io.appium.java_client.service.local.AppiumServiceBuilder;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+
+public class AppiumUtils {
+    private String nodeModulesAppiumPath = "/Users/camilo.posadaa/.nvm/versions/node/v18.13.0/lib/node_modules/appium/build/lib/main.js";
+
+    protected Properties properties;
+    public AppiumDriverLocalService startAppiumServer(String appiumIPAddress, int appiumPort) {
+        // Start Appium Server programmatically
+        AppiumDriverLocalService service = new AppiumServiceBuilder()
+                .withAppiumJS(new File(nodeModulesAppiumPath))
+                .withIPAddress(appiumIPAddress)
+                .usingPort(appiumPort)
+                .build();
+
+        service.start();
+
+        return service;
+    }
+
+    public void loadProperties() throws IOException {
+        properties = new Properties();
+        FileInputStream inputStream = new FileInputStream(
+                System.getProperty("user.dir").concat(
+                        "/src/main/java/org/example/resources/data.properties"
+                )
+        );
+
+        properties.load(inputStream);
+    }
+}
+
+```
+
+Then in the baseTest Utility I extend it, something  like this:
+
+> See that now i'm getting the app path, android device name, iosverion... etc. from the properties file
+
+```java
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.options.UiAutomator2Options;
+import io.appium.java_client.service.local.AppiumDriverLocalService;
+import io.appium.java_client.service.local.AppiumServiceBuilder;
+import org.example.utils.JsonUtils;
+import org.example.utils.actions.android.AndroidActions;
+import org.example.utils.assertions.CommonAssertions;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.time.Duration;
+
+public class AndroidBaseTest extends AppiumUtils {
+    protected AndroidDriver driver;
+    protected CommonAssertions commonAssertions;
+    protected JsonUtils jsonUtils;
+
+    private AppiumDriverLocalService service;
+    @BeforeClass
+    public void configureAppium () throws IOException {
+        loadProperties();
+
+        service = startAppiumServer(
+                properties.getProperty("appiumIPAddress"),
+                Integer.parseInt(properties.getProperty("appiumPort"))
+        );
+        // Set the capabilities
+        UiAutomator2Options capabilities = new UiAutomator2Options();
+        capabilities.setDeviceName(properties.getProperty("androidDeviceName"));
+        capabilities.setApp(properties.getProperty("androidAppPath"));
+        // Start the driver
+        driver = new AndroidDriver(service.getUrl(), capabilities);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+
+        commonAssertions = new CommonAssertions(driver);
+        jsonUtils = new JsonUtils();
+    }
+    @AfterClass
+    public void tearDown () {
+        // Clean
+        driver.quit();
+        service.close();
+    }
+
+}
+```
+
+### Extent Report
+> Important: To see the report you need to run the test suite from the testNG.xml file. In IntelliJ you right click the xml file and select run.
+```xml
+<!-- https://mvnrepository.com/artifact/com.aventstack/extentreports -->
+<dependency>
+    <groupId>com.aventstack</groupId>
+    <artifactId>extentreports</artifactId>
+    <version>5.0.9</version>
+</dependency>
+```
+
+Create a test util to manage the Extent Report initializing: `src/test/java/org/example/testutils/ExtendReporterNG.java`
+
+```java
+package org.example.testutils;
+
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+public class ExtendReporterNG {
+
+    private static ExtentReports extentReports;
+    public static ExtentReports getReporterObject() {
+        String path = System.getProperty("user.dir") + "/reports/index.html";
+        ExtentSparkReporter reporter = new ExtentSparkReporter(path);
+        reporter.config().setReportName("Mobile Automation Results");
+        reporter.config().setDocumentTitle("Test Result");
+
+        extentReports = new ExtentReports();
+        extentReports.attachReporter(reporter);
+        extentReports.setSystemInfo("Tester", "Camilo");
+
+        return extentReports;
+    }
+
+}
+
+```
+
+#### Taking ScreenShots
+We need an util to take screenshots in case of failure, we will put this in the AppiumUtils class
+
+```java
+    public String getScreenshot(String screenShotName, AppiumDriver driver) throws IOException {
+        File source = driver.getScreenshotAs(OutputType.FILE);
+        String destination = System.getProperty("user.dir") +
+                "/reports/" + screenShotName + ".png";
+        FileUtils.copyFile(source, new File(destination));
+        return destination;
+    }
+```
+
+### TestNG Listeners
+
+We will use testNG listeners to helps us with the reporting
+
+#### Available Listeners are:
+- onTestStart
+- onTestSuccess
+- onTestFailure
+- onTestSkipped
+- onTestFailedButWithinSuccessPercentage
+- onTestFailedWithTimeout
+- onStart
+- onFinish
+
+Implement the `ITestListener` interface from TestNG like this:
+
+```java
+package org.example.testutils;
+
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.Status;
+import io.appium.java_client.AppiumDriver;
+import lombok.SneakyThrows;
+import org.testng.ITestContext;
+import org.testng.ITestListener;
+import org.testng.ITestResult;
+
+public class NGListeners extends AppiumUtils implements ITestListener {
+
+    private ExtentTest test;
+
+    private ExtentReports extentReports = ExtendReporterNG.getReporterObject();
+    private AppiumDriver driver;
+    @Override
+    public void onTestStart(ITestResult result) {
+        test = extentReports.createTest(result.getMethod().getMethodName());
+    }
+
+    @Override
+    public void onTestSuccess(ITestResult result) {
+        test.log(Status.PASS, "Test Passed");
+    }
+
+    @Override
+    public void onTestFailure(ITestResult result) {
+        test.fail(result.getThrowable());
+        try {
+            driver = (AppiumDriver) result
+                    .getTestClass()
+                    .getRealClass()
+                    .getField("driver")
+                    .get(result.getInstance());
+            test.addScreenCaptureFromPath(
+                    getScreenshot(result.getMethod().getMethodName(), driver),
+                    result.getMethod().getMethodName()
+            );
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void onFinish(ITestContext context) {
+        extentReports.flush();
+    }
+}
+
+```
+
+- We use `onTestStart` to initialize the test report for the particular test case, we obtain from the `ITestResult` the method name, this will be the test case name in our report
+- We use `onTestSuccess` to report the success of the test that is running
+- We use `onTestFailure` to report the test failure and attach a screenshot of the failure to the report
+- We use `onFinish` to generate the report once all the test have ran
+
+#### Grouping tests
+For example you want to mark some test for Smoke or some to run only in the regression pipeline. For this you use groups `@Test(groups = { "smoke" })` and in the testng_smoke.xml you use the groups tag like this:
+> Warning: This will run the TestNG annotations that are marked with the group tag, that means that in our case it will not run the methods marked as @BeforeClass or @BeforeMethod or @AfterClass... etc. One way to overcome this is to add the `alwaysRun = true` to the annotation like this: `@BeforeClass(alwaysRun = true)`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Testing mobile Apps">
+    <listeners>
+        <listener class-name="org.example.testutils.NGListeners"></listener>
+    </listeners>
+    <test name="Android Tests">
+        <groups>
+            <run>
+                <include name="smoke"></include>
+            </run>
+        </groups>
+        <classes>
+            <class name="org.example.android.GeneralStoreAPKExampleTests"/>
+        </classes>
+    </test> <!-- Test -->
+</suite> <!-- Suite -->
+```
+
+
+### Trigger test using maven
+
+> More info here: https://maven.apache.org/surefire/maven-surefire-plugin/examples/testng.html
+
+Create a new profile in your pom.xml file for each suite (testNG xml file) that you have, in my case I have two xml one that runs all the test and another one that runs test in the smoke group:
+
+The complete pom.xml file looks like this
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.example</groupId>
+  <artifactId>Appium-java-framework</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Appium-java-framework</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>15</maven.compiler.source>
+    <maven.compiler.target>15</maven.compiler.target>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.appium</groupId>
+      <artifactId>java-client</artifactId>
+      <version>8.3.0</version>
+      <exclusions>
+
+        <exclusion>
+          <groupId>org.seleniumhq.selenium</groupId>
+          <artifactId>selenium-remote-driver</artifactId>
+        </exclusion>
+
+        <exclusion>
+          <groupId>org.seleniumhq.selenium</groupId>
+          <artifactId>selenium-support</artifactId>
+        </exclusion>
+
+        <exclusion>
+          <groupId>org.seleniumhq.selenium</groupId>
+          <artifactId>selenium-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.testng/testng -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.7.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.8.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.bonigarcia</groupId>
+      <artifactId>webdrivermanager</artifactId>
+      <version>5.3.2</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.aventstack/extentreports -->
+    <dependency>
+      <groupId>com.aventstack</groupId>
+      <artifactId>extentreports</artifactId>
+      <version>5.0.9</version>
+    </dependency>
+
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>Regression</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.0.0</version>
+            <configuration>
+              <suiteXmlFiles>
+                <suiteXmlFile>testng.xml</suiteXmlFile>
+              </suiteXmlFiles>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>Smoke</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.0.0</version>
+            <configuration>
+              <suiteXmlFiles>
+                <suiteXmlFile>testng_smoke.xml</suiteXmlFile>
+              </suiteXmlFiles>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
+
+```
+
+Run the profile you want like this (yes without a space between  the -p and the profile id)
+
+```bash
+mvn test -PRegression
+```
+

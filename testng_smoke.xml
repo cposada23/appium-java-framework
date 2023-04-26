@@ -5,13 +5,13 @@
         <listener class-name="org.example.testutils.NGListeners"></listener>
     </listeners>
     <test name="Android Tests">
+        <groups>
+            <run>
+                <include name="smoke"></include>
+            </run>
+        </groups>
         <classes>
             <class name="org.example.android.GeneralStoreAPKExampleTests"/>
-        </classes>
-    </test> <!-- Test -->
-    <test name="iOS Tests">
-        <classes>
-            <class name="org.example.ios.UIKitCatalogAppTest"/>
         </classes>
     </test> <!-- Test -->
 </suite> <!-- Suite -->

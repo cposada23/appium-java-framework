@@ -7,6 +7,7 @@ import io.appium.java_client.android.nativekey.KeyEvent;
 import org.example.screenobjects.android.GSCartScreen;
 import org.example.screenobjects.android.GSProductCatalogScreen;
 import org.example.screenobjects.android.GeneralStoreFormScreen;
+import org.example.testutils.AndroidBaseTest;
 import org.example.utils.dto.FormFields;
 import org.example.utils.enums.Gender;
 import org.openqa.selenium.By;
@@ -18,13 +19,12 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 public class GeneralStoreAPKExampleTests extends AndroidBaseTest {
 
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     public void setup() throws InterruptedException {
         String initialActivity = ".MainActivity";
         String packageName = "com.androidsample.generalstore";
@@ -84,13 +84,13 @@ public class GeneralStoreAPKExampleTests extends AndroidBaseTest {
         commonAssertions.assertIAmInScreen("Products");
     }
 
-    @Test
+    @Test(groups = { "smoke" })
     public void validateToastMessage() {
         GeneralStoreFormScreen formScreen = new GeneralStoreFormScreen(driver);
         // Click letsShop button
         formScreen.clickLetsShop();
         // Validate the toast message
-        commonAssertions.assertToastMessage("Please enter your name");
+        commonAssertions.assertToastMessage("Please enter your namasdfasdfe");
     }
 
 
